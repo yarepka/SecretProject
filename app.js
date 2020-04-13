@@ -34,7 +34,8 @@ mongoose.set("useCreateIndex", true);
 const userSchema = new mongoose.Schema({
     email: String,
     password: String,
-    googleId: String
+    googleId: String,
+    secret: String
 });
 
 // use passportLocalMongoose as a plugin
@@ -94,12 +95,42 @@ app.get("/register", (req, res) => {
 });
 
 app.get("/secrets", (req, res) => {
+    // find all users who's secret is not equals to null
+    User.find({"secret": {$ne:null}}, (err, foundUsers) => {
+        if(!err) {
+            if(foundUsers) {
+                res.render("secrets", {usersWithSecrets:foundUsers});
+            }
+        } else {
+            console.log(err);
+        }
+    });
+});
+
+app.get("/submit", (req, res) => {
     if(req.isAuthenticated()) {
-        res.render("secrets");
+        res.render("submit");
     } else {
         // redirect to login page if user not loged in yet
         res.redirect("/login");
     }
+});
+
+app.post("/submit", (req, res) => {
+    const submittedSecret = req.body.secret;
+    console.log(req.user.id);
+    User.findById(req.user.id, (err, foundUser) => {
+        if(!err)
+        {
+            if(foundUser) {
+                foundUser.secret = submittedSecret;
+                foundUser.save();
+                res.redirect("/secrets");
+            }
+        } else {
+            console.log(err);
+        }
+    });
 });
 
 app.get("/logout", (req, res) => {
